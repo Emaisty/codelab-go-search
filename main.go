@@ -54,9 +54,7 @@ func exit(format string, val ...interface{}) {
 	os.Exit(1)
 }
 
-func processFile_gorut(fpath string, pattern string, wg *sync.WaitGroup) {
-
-	defer wg.Done()
+func processFile(fpath string, pattern string) {
 
 	res, err := scanFile(fpath, pattern)
 	if err != nil {
@@ -73,21 +71,9 @@ func processFile_gorut(fpath string, pattern string, wg *sync.WaitGroup) {
 	}
 }
 
-func processFile_single(fpath string, pattern string) {
-
-	res, err := scanFile(fpath, pattern)
-	if err != nil {
-		exit("Error scanning %s: %s", fpath, err.Error())
-	}
-	if *numberofstring {
-		for _, line := range res {
-			fmt.Println(line.file, ":", line.lineNumber, ":", line.line)
-		}
-	} else {
-		for _, line := range res {
-			fmt.Println(line.file, ":", line.line)
-		}
-	}
+func gorut(fpath string, pattern string, wg *sync.WaitGroup) {
+	defer wg.Done()
+	processFile(fpath, pattern)
 }
 
 func processDirectory(dir string, pattern string) {
@@ -107,7 +93,7 @@ func processDirectory(dir string, pattern string) {
 		}
 		if !info.IsDir() {
 			wg.Add(1)
-			go processFile_gorut(path, pattern, &wg)
+			go gorut(path, pattern, &wg)
 		}
 
 	}
@@ -132,6 +118,6 @@ func main() {
 	if info.IsDir() {
 		processDirectory(path, pattern)
 	} else {
-		processFile_single(path, pattern)
+		processFile(path, pattern)
 	}
 }
