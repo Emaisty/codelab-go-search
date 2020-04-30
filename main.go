@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/md5"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -12,6 +13,16 @@ import (
 	"sync"
 	"time"
 )
+
+func exit(format string, val ...interface{}) {
+	if len(val) == 0 {
+		fmt.Println(format)
+	} else {
+		fmt.Printf(format, val)
+		fmt.Println()
+	}
+	os.Exit(1)
+}
 
 type HashResult struct {
 	file string
@@ -151,10 +162,16 @@ func md5FilesParallel(done chan bool, files chan string, n int, pattern string) 
 }
 
 func main() {
+	flag.Parse()
+	if flag.NArg() < 2 {
+		exit("usage: go-search <path> <pattern> to search")
+	}
+	path := flag.Arg(0)
+	pattern := flag.Arg(1)
 	done := make(chan bool)
 	start := time.Now()
-	files, errc := walkDirectory(done, ".")
-	pattern := "kek"
+	fmt.Println(path, pattern)
+	files, errc := walkDirectory(done, path)
 	// Синтетика.
 	//go func() {
 	//    time.Sleep(1 * time.Second)
