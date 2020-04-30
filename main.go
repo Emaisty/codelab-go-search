@@ -2,11 +2,9 @@ package main
 
 import (
 	"bufio"
-	"crypto/md5"
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,12 +20,6 @@ func exit(format string, val ...interface{}) {
 		fmt.Println()
 	}
 	os.Exit(1)
-}
-
-type HashResult struct {
-	file string
-	hash string
-	err  error
 }
 
 type ScanResult struct {
@@ -63,27 +55,6 @@ func scanFile(fpath, pattern string) (r ScanResult) {
 	return
 }
 
-func md5File(path string) (r HashResult) {
-	r.file = path
-	f, err := os.Open(path)
-	if err != nil {
-		r.err = err
-		return
-	}
-	defer f.Close()
-
-	h := md5.New()
-	_, err = io.Copy(h, f)
-	if err != nil {
-		r.err = err
-		return
-	}
-	hashBytes := h.Sum(nil)
-	r.err = nil
-	r.hash = fmt.Sprintf("%x", hashBytes)
-	return
-}
-
 func walkDirectory(done chan bool, root string) (chan string, chan error) {
 	files := make(chan string)
 	// Канал в котором можно оставить 1 элемент(1 ошибку)
@@ -107,17 +78,6 @@ func walkDirectory(done chan bool, root string) (chan string, chan error) {
 		close(files)
 	}()
 	return files, errc
-}
-
-func md5Files(files chan string) chan HashResult {
-	res := make(chan HashResult)
-	go func() {
-		for f := range files {
-			res <- md5File(f)
-		}
-		close(res)
-	}()
-	return res
 }
 
 func md5FilesParallel(done chan bool, files chan string, n int, pattern string) chan ScanResult {
