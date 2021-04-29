@@ -57,7 +57,6 @@ func scanFile(fpath, pattern string) (r ScanResult) {
 
 func walkDirectory(done chan bool, root string) (chan string, chan error) {
 	files := make(chan string)
-	// Канал в котором можно оставить 1 элемент(1 ошибку)
 	errc := make(chan error, 1)
 	go func() {
 		err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
@@ -107,8 +106,8 @@ func md5FilesParallel(done chan bool, files chan string, n int, pattern string) 
 		go func() {
 			for f := range files {
 				select {
-				case <-done: // Canceled
-				case res <- scanFile(f, pattern): // OK
+				case <-done:
+				case res <- scanFile(f, pattern):
 				}
 			}
 			wg.Done()
@@ -132,12 +131,6 @@ func main() {
 	start := time.Now()
 	fmt.Println(path, pattern)
 	files, errc := walkDirectory(done, path)
-	// Синтетика.
-	//go func() {
-	//    time.Sleep(1 * time.Second)
-	//    close(done)
-	//}()
-	//results := md5Files(files)
 	results := md5FilesParallel(done, files, 20, pattern)
 	for res := range results {
 		if res.file != "" {
